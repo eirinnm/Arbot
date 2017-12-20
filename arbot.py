@@ -1,7 +1,9 @@
 import requests
+import math
 import sqlite3
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 mpl.use('Agg')
 import seaborn as sns
 from matplotlib.ticker import FuncFormatter
@@ -84,12 +86,27 @@ def chart_results():
     fig.savefig('public/chart.png')
     return ax
 #%%
+def chart_separate():
+    conn = sqlite3.connect('database.db')
+    table_df = pd.read_sql_query('select * from results',conn)
+    table_df.index = pd.DatetimeIndex(table_df.timestamp)
+    conn.close()
+    instruments = sorted(table_df.instrument.unique())
+    fig, axes = plt.subplots(math.ceil(len(instruments)/3),3, sharex=True, sharey=False, figsize=(18,10))
+    for instrument, ax in zip(instruments, axes.flat):
+        table_df[table_df.instrument==instrument][['from_price','to_price']].plot(ax=ax, legend=False)
+        table_df[table_df.instrument==instrument].profit.plot(ax=ax, secondary_y=True, style='k', alpha=0.5)
+        ax.set_title(instrument)
+    plt.tight_layout()
+    plt.savefig('public/subplots.png')
+#%%
 def refresh():
     ## This code should run every 5 minutes or so
     results = get_kraken_to_btcmarkets()
     save_results_table(results)
     append_results_db(results)
     chart_results();
+    chart_separate()
 
 if __name__ == "__main__":
     refresh()

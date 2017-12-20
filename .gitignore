@@ -48,3 +48,4 @@ Temporary Items
 *.db
 public/chart.png
 public/results.txt
+public/subplots.png
