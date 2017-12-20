@@ -52,11 +52,12 @@ def get_kraken_to_btcmarkets():
     results_df.columns = ['timestamp','instrument','from_price','to_price','profit']
     return results_df
 
-def print_results_table(results): 
+def save_results_table(results): 
     #just a small table of current profits as a text output
-    for row in results.itertuples():
-        print(f'{row.instrument} {row.profit:0.2%}')
-    print(f'({results.iloc[0].instrument}<>{results.iloc[-1].instrument}) {results.iloc[0].profit-results.iloc[-1].profit:0.2%}')
+    with open('public/results.txt','w') as outfile:
+        for row in results.itertuples():
+            outfile.write(f'{row.instrument} {row.profit:0.2%}\n')
+        outfile.write(f'({results.iloc[0].instrument}<>{results.iloc[-1].instrument}) {results.iloc[0].profit-results.iloc[-1].profit:0.2%}\n')
 #%%
 def append_results_db(results):
     conn = sqlite3.connect('database.db')
@@ -86,7 +87,7 @@ def chart_results():
 def refresh():
     ## This code should run every 5 minutes or so
     results = get_kraken_to_btcmarkets()
-    print_results_table(results)
+    save_results_table(results)
     append_results_db(results)
     chart_results();
 
