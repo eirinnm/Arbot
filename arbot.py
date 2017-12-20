@@ -3,8 +3,8 @@ import math
 import sqlite3
 import pandas as pd
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 mpl.use('Agg')
+import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.ticker import FuncFormatter
 import ccxt
