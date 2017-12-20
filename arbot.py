@@ -1,8 +1,17 @@
 import requests
+import sqlite3
 import pandas as pd
 import seaborn as sns
 from matplotlib.ticker import FuncFormatter
 import ccxt
+
+def create_sqlite_db():
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute('CREATE TABLE results (timestamp real, instrument text, from_price read, to_price real, profit real)')
+    conn.commit()
+    conn.close()
+#%%
 def get_euro_rate():
     ## get fiat exchange rates in EUR
     r=requests.get('https://api.fixer.io/latest?base=EUR')
@@ -37,7 +46,9 @@ def get_kraken_to_btcmarkets():
     df = df.sort_values('profit', ascending=False)
     #assign all these results the same timestamp because they are close enough
     df.timestamp = pd.to_datetime(df.timestamp.max(),unit='s')
-    return df[['timestamp','instrument','profit']]
+    results_df = df[['timestamp','instrument','bid','eurobid','profit']]
+    results_df.columns = ['timestamp','instrument','from_price','to_price','profit']
+    return results_df
 
 def print_results_table(results): 
     #just a small table of current profits as a text output
@@ -45,17 +56,20 @@ def print_results_table(results):
         print(f'{row.instrument} {row.profit:0.2%}')
     print(f'({results.iloc[0].instrument}<>{results.iloc[-1].instrument}) {results.iloc[0].profit-results.iloc[-1].profit:0.2%}')
 #%%
-def save_results(results):
-    #append results to a flat file
-    with open('results.txt','a') as outfile:
-        results.to_csv(outfile, header=False, index=False)
+def append_results_db(results):
+    conn = sqlite3.connect('database.db')
+    results.to_sql('results',conn,if_exists='append', index=False)
+    conn.close()
+
 #%%
 def chart_results():
     #read results from flat file and make a chart
     sns.set_style('darkgrid')
     sns.set_context('talk')
-    rdf = pd.read_csv('results.txt', header=None, names=['timestamp','instrument','profit'])
-    rdf = rdf.pivot(index='timestamp',columns='instrument',values='profit')
+    conn = sqlite3.connect('database.db')
+    table_df = pd.read_sql_query('select * from results',conn)
+    conn.close()
+    rdf = table_df.pivot(index='timestamp',columns='instrument',values='profit')
     rdf.index = pd.DatetimeIndex(rdf.index)
     #sort the columns so the current-highest-profit one is first
     rdf = rdf[rdf.iloc[-1].sort_values(ascending=False).index]
@@ -67,8 +81,9 @@ def chart_results():
     fig.savefig('chart.png')
     return ax
 #%%
-## This code should run every 5 minutes or so
-results = get_kraken_to_btcmarkets()
-print_results_table(results)
-save_results(results)
-chart_results();
+def refresh():
+    ## This code should run every 5 minutes or so
+    results = get_kraken_to_btcmarkets()
+    print_results_table(results)
+    append_results_db(results)
+    chart_results();
