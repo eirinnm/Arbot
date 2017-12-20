@@ -1,6 +1,8 @@
 import requests
 import sqlite3
 import pandas as pd
+import matplotlib as mpl
+mpl.use('Agg')
 import seaborn as sns
 from matplotlib.ticker import FuncFormatter
 import ccxt
@@ -78,7 +80,7 @@ def chart_results():
     ax = rdf.plot(figsize=(12,8), title='Arbitrage Kraken to BTC Markets')
     ax.yaxis.set_major_formatter(FuncFormatter('{0:.1%}'.format))
     fig = ax.get_figure()
-    fig.savefig('chart.png')
+    fig.savefig('public/chart.png')
     return ax
 #%%
 def refresh():
