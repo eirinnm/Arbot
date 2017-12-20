@@ -89,3 +89,6 @@ def refresh():
     print_results_table(results)
     append_results_db(results)
     chart_results();
+
+if __name__ == "__main__":
+    refresh()
