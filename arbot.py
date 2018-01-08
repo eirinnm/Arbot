@@ -64,10 +64,16 @@ def save_results_table(results):
 #%%
 def append_results_db(results):
     conn = sqlite3.connect('database.db')
-    table_df = pd.read_sql_query('select * from results',conn)
-    dt = pd.to_datetime(table_df.timestamp)
-    table_df = table_df[datetime.datetime.now() - dt < datetime.timedelta(days=3)]
-    complete_df = pd.concat([table_df, results], ignore_index=True)
+    try:
+        table_df = pd.read_sql_query('select * from results',conn)
+        dt = pd.to_datetime(table_df.timestamp)
+        table_df = table_df[datetime.datetime.now() - dt < datetime.timedelta(days=3)]
+        complete_df = pd.concat([table_df, results], ignore_index=True)
+    except pd.io.sql.DatabaseError:
+        complete_df = results    
+    complete_df.timestamp = pd.to_datetime(complete_df.timestamp)
+    complete_df.to_price = complete_df.to_price.astype(float)
+    complete_df.from_price = complete_df.from_price.astype(float)
     complete_df.to_sql('results',conn,if_exists='replace', index=False)
     conn.close()
 
